@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: will-service
+  namespace: argocd
+  labels:
+    name: will-service
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/winstonallo/iotp3.git
+    targetRevision: HEAD
+    path: config
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: dev
+  info:
+    - name: "will-service"
+      value: "Simple application that syncs with CI/CD"
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    hooks:
+      - name: restart-port-forward
+        type: PostSync
+        command: ["/bin/bash"]
+        args: ["-c", "kubectl port-forward svc/will-service 8888:8888 -n dev > /dev/null 2>&1 &"]
+    syncOptions:
+    - CreateNamespace=true
+    - PrunePropagationPolicy=foreground
+    - PruneLast=true
+    retry:
+      limit: -1
+      backoff:
+        duration: 2s
+        factor: 2
+        maxDuration: 3m
+  revisionHistoryLimit: 10
