@@ -1,6 +1,14 @@
 #!/bin/bash
 
-k3d cluster create abied-ch
+k3d cluster create abied-ch --port "8888:80@loadbalancer" --port "8443:443@loadbalancer" --k3s-arg '--disable=traefik@server:0'
+
+kubectl apply -f ingress.yaml
+
+echo "waiting for the Ingress controller"
+sleep 20
+
+echo "adding will.local to /etc/hosts"
+echo "127.0.0.1 will.local" | sudo tee -a /etc/hosts
 
 argocd_namespace="argocd"
 dev_namespace="dev"
@@ -33,5 +41,8 @@ argocd app sync will-service
 
 kubectl rollout status deployment will -n dev
 
-kubectl port-forward svc/will-service 8888:8888 -n dev > /dev/null 2>&1 &
+# kubectl port-forward service/will-service 8888:8888 -n dev
+
+
+# kubectl port-forward svc/will-service 8888:8888 -n dev > /dev/null 2>&1 &
 
